@@ -210,5 +210,5 @@ class DoubanCrawler:
 if __name__ == '__main__':
     # url：爬取的页面
     # pages：爬取的页数
-    db_crawler = DoubanCrawler(__url_history__, 2)
+    db_crawler = DoubanCrawler(__url_novels__, 2)
     db_crawler.write2csv()
