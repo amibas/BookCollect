@@ -20,7 +20,6 @@ class DoubanCrawler:
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
         "Connection": "close",
-        "Cookie": """viewed="36153222"; bid=JXDK2yM7PkQ; ll="118318"; dbcl2="269401606:BmjIPaAKKv4"; push_noty_num=0; push_doumail_num=0; ck=JVDD; ct=y"""
 
     }
 
