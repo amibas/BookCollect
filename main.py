@@ -6,20 +6,22 @@ from pandas import DataFrame
 from tqdm import tqdm
 
 # 小说类别的url
-__url_novels__ = "https://book.douban.com/tag/%E5%B0%8F%E8%AF%B4"
+__url_novels__ = "https://book.douban.com/tag/%E5%B0%8F%E8%AF%B4?start=0&type=T"
 # 历史类别的url
-__url_history__ = "https://book.douban.com/tag/%E5%8E%86%E5%8F%B2"
+__url_history__ = "https://book.douban.com/tag/%E5%8E%86%E5%8F%B2?start=0&type=T"
 # 哲学类别的url
-__url_philosophy__ = "https://book.douban.com/tag/%E5%93%B2%E5%AD%A6"
+__url_philosophy__ = "https://book.douban.com/tag/%E5%93%B2%E5%AD%A6?start=0&type=T"
 
 
 class DoubanCrawler:
     send_headers = {
         "Host": "book.douban.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-        "Connection": "close"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+        "Connection": "close",
+        "Cookie": """viewed="36153222"; bid=JXDK2yM7PkQ; ll="118318"; dbcl2="269401606:BmjIPaAKKv4"; push_noty_num=0; push_doumail_num=0; ck=JVDD; ct=y"""
+
     }
 
     def __init__(self, url, pages):
@@ -28,7 +30,7 @@ class DoubanCrawler:
         :param pages: 要爬取的页数，豆瓣每页20本书的信息，决定了要爬取的数据量
         """
 
-        self.url = url + "?start=0&type=T"
+        self.url = url
         self.pages = [20 * i for i in range(pages)]
         self.book_class = ""
         self.book_names = []
@@ -56,22 +58,6 @@ class DoubanCrawler:
             idx_urls.append(g_url)
         return idx_urls
 
-    def open_url(self, url=None):
-        # 如果不给需要打开的url则自动打开最初始界面（对象初始化给的界面）
-        if url is None:
-            # 对网站发起get请求
-            resp = requests.get(self.url, headers=self.send_headers)
-            # 获取返回信息的文本部分
-            resp_text = resp.text
-            # 利用BS库对文本部分进行html解析，并返回解析后的界面
-            soup = BeautifulSoup(resp_text, "lxml")
-            return soup
-        else:
-            resp = requests.get(url, headers=self.send_headers)
-            resp_text = resp.text
-            soup = BeautifulSoup(resp_text, "lxml")
-            return soup
-
     def get_main_info(self, url):
         """
         获取url列表页面能获取主要信息，不打开各本书的独立页面，
@@ -93,21 +79,17 @@ class DoubanCrawler:
         book_writers = []
         book_comments = []
         book_scores = []
-        # 对url列表进行遍历并操作
-        # urls = self.generate_urls()
-        # 为了防止耦合，最好一个函数只操作一个页面，在主函数进行对这个函数的遍历操作
+
         resp = requests.get(url, headers=self.send_headers)  # 和上面一样的操作，向url发送get请求
 
         resp_text = resp.text  # 获取返回的文本信息
 
         soup = BeautifulSoup(resp_text, "lxml")  # 利用BS库对html格式的文本信息进行解析
-        try:
-            # 获取图书类别
-            book_class = soup.find("h1").get_text()
-            book_class = book_class_key.findall(book_class)
-        except:
-            print("书籍类别获取错误")
-            pass
+
+        # 获取图书类别
+        book_class = soup.find("h1").get_text()
+        book_class = book_class_key.findall(book_class)
+
         # 获取图书列表
         book_list = soup.find_all("li", attrs={"class": "subject-item"})
 
@@ -131,8 +113,6 @@ class DoubanCrawler:
             book_writers.append(book_writer)
             book_nations.append(book_nation)
 
-
-
             # 获取书籍简介
             if not book.find("p"):
                 book_comments.append("无简介")
@@ -142,61 +122,6 @@ class DoubanCrawler:
             book_scores.append(book.find("span", attrs={"class": "rating_nums"}).get_text())
 
         return book_names, book_pages, book_class * 20, book_writers, book_nations, book_comments, book_scores
-
-        # # 获取书名
-        # for a in soup.find_all("a"):
-        #     try:
-        #         # 获取书名
-        #         res = a.get("title")
-        #         # 获取对应的内层网站
-        #         res_url = a.get("href")
-        #         # 获取每本书对应的独立页面url
-        #         if res is not None:
-        #             book_names.append(res)
-        #             book_pages.append(res_url)
-        #     except:
-        #         print("书名获取错误")
-        #         pass
-        #
-        # """
-        # 获取书的作者和作者国籍，因为非中国籍的形式为[国家]作者，而中国籍作者在作者名前没有[]
-        # 所以我们用两个正则表达式分别检索，但是少数作者即使不为中国籍，也没有加[]，此类我把这类数据当作脏数据
-        # 为了尽可能的修正这种数据带来的影响，设置判定条件为，没有[]且作者名小于五个字，为中国作者
-        # """
-        # for nation in soup.find_all("div", attrs={"class": "pub"}):
-        #     nn = nation.get_text().strip()
-        #     # print(nn)
-        #     book_writer = book_writer_key1.findall(nn)[0]
-        #
-        #     if ']' in book_writer:
-        #         book_writers.append(book_writer_key2.findall(book_writer)[0].strip())
-        #     else:
-        #         book_writers.append(book_writer)
-        #
-        #     try:
-        #         bn = book_nation_key.findall(nn)
-        #         if bn == [] and len(book_writer) < 5:  # 中国籍作者的判定条件
-        #             book_nations.append("中")
-        #         elif bn:
-        #             # print(bn)
-        #             book_nations.append(bn[0])
-        #         else:
-        #             book_nations.append("日")
-        #     except:
-        #         book_nations.append("中")
-        #
-        # # 获取书籍简介
-        # for comment in soup.find_all("div", attrs={"class": "info"}):
-        #     if not comment.find_all("p"):
-        #         book_comments.append("无简介")
-        #     else:
-        #         book_comments.append(comment.find_all("p")[0].get_text())
-        #
-        # # 获取书籍评分
-        # for score in soup.find_all("span", attrs={"class": "rating_nums"}):
-        #     book_scores.append(score.get_text())
-        #
-        # return book_names, book_pages, book_class * 20, book_writers, book_nations, book_comments, book_scores
 
     def get_page_numbers(self, urls):
         """
@@ -285,5 +210,5 @@ class DoubanCrawler:
 if __name__ == '__main__':
     # url：爬取的页面
     # pages：爬取的页数
-    db_crawler = DoubanCrawler(__url_philosophy__, 1)
+    db_crawler = DoubanCrawler(__url_history__, 2)
     db_crawler.write2csv()
